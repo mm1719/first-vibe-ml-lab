@@ -1,112 +1,160 @@
-# 實驗室開發規範（Agent 專案模板）
+# CIFAR Vibe Lab Project Rules
 
-## 目標
-- 建立「可重現、可追蹤、可評估」的訓練/驗證/測試/推論 pipeline。
-- 以 WandB 作為實驗追蹤，確保訓練曲線與最終 evaluation 指標清楚區分。
+## 文件定位
+- `.cursorrules_original` 是這個專案最一開始提供給 Cursor 的原始規範。
+- `.cursorrules` 是依照目前已完成版本重新整理後的規範，目的是讓同類型專案可以被穩定複現。
+- 若兩者內容有差異，應以 `.cursorrules` 反映的最終專案行為與結構為準。
 
-## 總原則（Agent 行為規範）
-- 優先完成能跑通的 end-to-end 流程：`train.py -> inference.py -> evaluation.py`
-- 保持模組職責分離：資料處理、模型定義、訓練迴圈、評估與推論互不混雜。
-- 一致性：train/val/test 的 normalization 必須一致；augmentation 僅應作用於 train。
-- 可重現：所有隨機行為必須受 `SEED` 管控（含 val split 的 indices、資料載入 shuffle 等）。
-- 可追蹤：訓練用 `wandb.log`（時間序列）；最終 evaluation 結果用 `wandb.run.summary`（run-level summary）。
+## 專案目標
+- 建立一套可執行、可重現、可追蹤的 CIFAR-10 小型實驗流程。
+- 明確拆分訓練、推論、最終評估三個階段。
+- 使用 WandB 區分訓練期 time-series 指標與最終 evaluation summary。
 
-## 框架與硬體
+## 專案範圍
 - 框架：PyTorch
-- 設備：自動偵測 CUDA，否則使用 CPU
-- Windows：`num_workers` 預設使用保守值（避免 multiprocessing 問題），可由 `config.py` 控制。
-
-## 可重現性（Reproducibility）要求
-- `config.py` 提供 `SEED`
-- 在 `train.py` / `evaluation.py` 入口明確設定 seed：
-  - Python `random.seed(SEED)`
-  - NumPy `np.random.seed(SEED)`（若使用）
-  - `torch.manual_seed(SEED)`、`torch.cuda.manual_seed_all(SEED)`
-  - 視需要設定 deterministic（由專案需求決定；預設可保持常用設定）
-- `random_split` 或任何切分 indices 需使用帶 `generator.manual_seed(SEED)` 的方式，避免每次跑出不同 val。
-
-## 代碼架構（依此順序建立）
-1. **config.py**
-   - 只放「可調參數」與「路徑/常數」。
-   - 必含：`BATCH_SIZE`, `LR`, `EPOCHS`, `VAL_SPLIT`, `SEED`, `MODEL_PATH`, `WANDB_PROJECT`。
-   - 必含資料處理常數：例如 dataset 的 normalization `MEAN/STD`、`NUM_CLASSES` 等。
-2. **dataset.py**
-   - 只負責：transform、dataset 建立、DataLoader、train/val/test split。
-   - 分割規則：
-     - Train/Val：從同一個 `train=True` 的資料源切出固定比例（`VAL_SPLIT`）
-     - Test：固定使用 `train=False` 的資料源（獨立、僅最終 evaluation 用）
-   - transform 規則：
-     - train_transform：augmentation + normalization
-     - val_transform / test_transform：僅 normalization（不做 augmentation）
-     - inference display_transform：必要時提供「不含 normalization」版本給繪圖使用
-   - DataLoader 規則：
-     - train_loader：`shuffle=True`
-     - val/test_loader：`shuffle=False`
-     - `num_workers` 使用 `config.py` 控制值
-3. **model.py**
-   - 定義模型 class，例如 `SimpleCNN`。
-   - 輸出層維度必須等於 `NUM_CLASSES`。
-   - `forward()` 回傳 logits（不加 softmax；loss 使用 `CrossEntropyLoss` 時由其內部處理）。
-4. **train.py**
-   - 功能：訓練迴圈 + 每 epoch validation + 訓練/驗證指標上傳。
-   - device：務必把 model 與 batch 都搬到同一 device。
-   - 失敗保護：
-     - 若 wandb 未登入，可讓錯誤訊息清楚（不吞例外）。
-   - WandB：
-     - `wandb.init(project=WANDB_PROJECT)`，並把超參寫進 `wandb.config.update`
-     - 訓練曲線用 `wandb.log`，keys 需遵循命名規範：`train_loss`, `train_acc`, `val_loss`, `val_acc`
-   - epoch 流程：
-     - `model.train()` 訓練
-     - `model.eval()` + `torch.no_grad()` 驗證
-   - 儲存：
-     - 訓練結束至少存一次 `model.state_dict()` 到 `MODEL_PATH`
-     - （可選）若有 best 策略，則額外存 `MODEL_PATH_BEST`
-5. **inference.py**
-   - 讀取 `MODEL_PATH`。
-   - 從 test set 隨機抽取固定數量的樣本（本專案：4 張）。
-   - 將「原圖 + GT / Pred」畫在同一張圖上，輸出圖片（例如 `inference_samples.png`）。
-6. **evaluation.py**
-   - 用 test set（有 ground truth）做最終評估。
-   - 必含指標：
-     - top-k accuracy：k = 1, 3, 5（專案固定即可）
-     - confusion matrix：
-       - counts（原始次數）
-       - normalized by GT（每一列除以該 GT 類別總數）
-     - classification report（precision/recall/f1，可由 confusion matrix 推導）
-     - per-class accuracy（每類別正確率）
-   - WandB logging 策略（關鍵！）：
-     - scalar 指標（acc/precision/recall/f1）：放 `wandb.run.summary.update()`（run-level summary，避免生成多餘 charts）
-     - per-class 指標：用 `wandb.Table` 一次性上傳（每類一列）
-     - confusion matrix：上傳 PNG（`wandb.Image(path)`），保留互相對照的兩張圖
-   - Resume 支援：
-     - 支援 CLI `--resume-run-id <id>` 讓 evaluation 指標追加到指定訓練 run（同一 run 的 summary/資源便於追蹤）
-
-## 資料與路徑約定
-- Dataset 路徑：`./data`
-- `dataset.py` 與 `evaluation.py` 優先 `download=False`（當資料已整理好結構時避免重下載）
-- 若資料尚未存在，再讓 download=True 顯式接管（由 agent 規則或程式選擇；原則是避免無謂網路）。
-
-## WandB 命名規範（讓圖表好讀）
-- 訓練曲線 keys 前綴：
-  - `train_`（例如 `train_loss`、`train_acc`）
-  - `val_`（例如 `val_loss`、`val_acc`）
-- Evaluation keys 前綴：
-  - `test_`（例如 `test_acc_top1`、`test_acc_top5`）
-  - `macro_` / `weighted_`（例如 `macro_f1`、`weighted_f1`）
-- per-class table 欄位：
-  - `class`, `per_class_acc`, `precision`, `recall`, `f1`
-
-## CLI 與 Flag（Agent 必做）
-- 使用 `argparse`
-- `evaluation.py` 至少支援：
-  - `--resume-run-id`（將 evaluation 接到既有 run）
-- `train.py` 與 `inference.py` 建議支援：
-  - `--model-path`（可覆寫 `MODEL_PATH`）
-  - （可選）`--wandb-resume` 或 `--run-id`（提升實驗串接能力）
-
-## 本專案具體值（CIFAR-10 範例，可在新專案替換）
-- 數據：`torchvision.datasets.CIFAR10`，root=./data
-- 超參（範例）：`BATCH_SIZE=64`, `LR=0.001`, `EPOCHS=5`, `VAL_SPLIT=0.1`, `SEED=42`
-- 模型：SimpleCNN（3 層卷積 + MaxPool + 全連接層），輸出 10 類（`NUM_CLASSES=10`）
+- 資料集：CIFAR-10
+- 資料路徑：`./data`
+- 實驗追蹤：Weights & Biases
 - WandB project：`First-Vibe-Project`
-- Train augmentation：`RandomHorizontalFlip`、`ColorJitter`（僅 train 使用）
+- 裝置：優先使用 CUDA，否則退回 CPU
+- Windows 環境下 `num_workers` 使用保守值，避免 multiprocessing 問題
+
+## 核心原則
+- 先完成可跑通的 end-to-end 流程：`train.py -> inference.py -> evaluation.py`
+- 模組責任分離：資料處理、模型定義、訓練、推論、評估不要混在同一檔案
+- train/val/test 使用一致的 normalization
+- augmentation 只能用在 training split
+- 所有隨機行為必須受 `SEED` 控制
+- 訓練指標用 `wandb.log`
+- 最終評估指標用 `wandb.run.summary.update()`
+
+## 檔案職責
+
+### `config.py`
+- 僅放可調整超參數、常數與路徑設定
+- 必含：
+  - `BATCH_SIZE`
+  - `LR`
+  - `EPOCHS`
+  - `VAL_SPLIT`
+  - `SEED`
+  - `NUM_CLASSES`
+  - `MODEL_PATH`
+  - `WANDB_PROJECT`
+- 建議包含：
+  - `MODEL_PATH_BEST`
+  - normalization 用的 `MEAN` / `STD`
+  - `NUM_WORKERS`
+
+### `dataset.py`
+- 負責 transforms、dataset 建立、train/val/test split、DataLoader
+- train/val 必須來自同一份 `train=True` 資料源
+- test 必須固定來自 `train=False`
+- train transform：augmentation + normalization
+- val/test transform：只做 normalization
+- inference 顯示用途可額外提供不做 normalization 的 display transform
+- DataLoader 規則：
+  - train loader：`shuffle=True`
+  - val/test loader：`shuffle=False`
+  - `num_workers` 由 `config.py` 控制
+- 預設以 `download=False` 讀資料；若資料不存在，錯誤訊息要清楚
+
+### `model.py`
+- 定義模型類別，例如 `SimpleCNN`
+- 輸出層大小必須等於 `NUM_CLASSES`
+- `forward()` 只回傳 logits，不自行加 softmax
+
+### `train.py`
+- 負責完整訓練迴圈與每個 epoch 的 validation
+- model 與 batch 必須放在同一個 device
+- 訓練前必須設定 reproducibility seed
+- 使用 `wandb.init(project=WANDB_PROJECT)`
+- 將主要超參寫入 `wandb.config`
+- 每個 epoch 記錄：
+  - `train_loss`
+  - `train_acc`
+  - `val_loss`
+  - `val_acc`
+- 必須至少儲存：
+  - final checkpoint 到 `MODEL_PATH`
+- 建議額外儲存：
+  - best validation checkpoint 到 `MODEL_PATH_BEST`
+- 應提供 CLI：
+  - `--model-path`
+  - `--best-model-path`
+
+### `inference.py`
+- 讀取訓練好的 checkpoint
+- 從 test set 抽固定數量樣本做預測
+- 本專案固定顯示 4 張圖
+- 輸出一張包含 GT / Pred 的圖片，例如 `inference_samples.png`
+- 應提供 CLI：
+  - `--model-path`
+
+### `evaluation.py`
+- 使用 test set 做最終評估
+- 評估前必須設定 reproducibility seed
+- 至少輸出下列指標：
+  - top-1 accuracy
+  - top-3 accuracy
+  - top-5 accuracy
+  - per-class accuracy
+  - precision / recall / f1
+  - confusion matrix counts
+  - confusion matrix normalized by ground truth
+- WandB 記錄規則：
+  - scalar 結果寫入 `wandb.run.summary.update()`
+  - per-class metrics 以 `wandb.Table` 上傳
+  - confusion matrix 圖片以 `wandb.Image` 上傳
+- 應支援 CLI：
+  - `--resume-run-id`
+
+## 可重現性要求
+- `SEED` 統一定義在 `config.py`
+- 入口腳本至少在 `train.py` 與 `evaluation.py` 設定：
+  - `random.seed(SEED)`
+  - `np.random.seed(SEED)`，若有使用 NumPy
+  - `torch.manual_seed(SEED)`
+  - `torch.cuda.manual_seed_all(SEED)`，若可用
+- 若專案選擇 deterministic 模式，需同步設定相關 torch backend
+- train/val split 必須使用帶 seed 的 generator 產生固定 indices
+
+## WandB 命名規範
+- 訓練階段：
+  - `train_loss`
+  - `train_acc`
+  - `val_loss`
+  - `val_acc`
+- 最終評估：
+  - `test_acc_top1`
+  - `test_acc_top3`
+  - `test_acc_top5`
+  - `macro_precision`
+  - `macro_recall`
+  - `macro_f1`
+  - `weighted_f1`
+- per-class table 欄位：
+  - `class`
+  - `per_class_acc`
+  - `precision`
+  - `recall`
+  - `f1`
+
+## 預設實作值
+- `BATCH_SIZE = 64`
+- `LR = 0.001`
+- `EPOCHS = 5`
+- `VAL_SPLIT = 0.1`
+- `SEED = 42`
+- `NUM_CLASSES = 10`
+- 模型：SimpleCNN
+- train augmentation：
+  - `RandomHorizontalFlip`
+  - `ColorJitter`
+
+## Agent 行為補充
+- 不要為了方便而把 train、inference、evaluation 混寫成單一腳本
+- 不要在 model output 上額外加 softmax 再交給 `CrossEntropyLoss`
+- 不要讓 test set 參與 train/val split
+- 不要在 evaluation 階段生成多餘的 WandB time-series charts
+- 若資料已存在，避免自動重新下載
