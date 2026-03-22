@@ -60,12 +60,12 @@ def _confusion_matrix_from_preds(labels: torch.Tensor, preds: torch.Tensor, num_
 
 
 @torch.no_grad()
-def evaluate(resume_run_id: str | None = None):
+def evaluate(model_path: str = MODEL_PATH, resume_run_id: str | None = None):
     set_seed(SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = SimpleCNN(num_classes=NUM_CLASSES).to(device)
-    state_dict = torch.load(MODEL_PATH, map_location=device)
+    state_dict = torch.load(model_path, map_location=device)
     model.load_state_dict(state_dict)
     model.eval()
 
@@ -255,18 +255,27 @@ def evaluate(resume_run_id: str | None = None):
             f1[i].item(),
         )
 
-    wandb.log(
-        {
-            "per_class_metrics": per_class_table,
-            "confusion_matrix_counts": wandb.Image(counts_path),
-            "confusion_matrix_normalized": wandb.Image(norm_path),
-        }
-    )
+    try:
+        wandb.log(
+            {
+                "per_class_metrics": per_class_table,
+                "confusion_matrix_counts": wandb.Image(counts_path),
+                "confusion_matrix_normalized": wandb.Image(norm_path),
+            }
+        )
+    except Exception as exc:
+        print(f"W&B artifact logging skipped: {exc}")
     wandb.finish()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        default=MODEL_PATH,
+        help="Path to the model checkpoint used for evaluation.",
+    )
     parser.add_argument(
         "--resume-run-id",
         type=str,
@@ -274,4 +283,4 @@ if __name__ == "__main__":
         help="When provided, evaluation logs will be appended to the existing W&B run id (resume).",
     )
     args = parser.parse_args()
-    evaluate(resume_run_id=args.resume_run_id)
+    evaluate(model_path=args.model_path, resume_run_id=args.resume_run_id)

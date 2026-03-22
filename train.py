@@ -6,7 +6,18 @@ import torch.optim as optim
 
 import wandb
 
-from config import BATCH_SIZE, EPOCHS, LR, MODEL_PATH, MODEL_PATH_BEST, NUM_CLASSES, SEED, WANDB_PROJECT
+from config import (
+    BATCH_SIZE,
+    EPOCHS,
+    LABEL_SMOOTHING,
+    LR,
+    MODEL_PATH,
+    MODEL_PATH_BEST,
+    NUM_CLASSES,
+    SEED,
+    WANDB_PROJECT,
+    WEIGHT_DECAY,
+)
 from dataset import get_dataloaders
 from model import SimpleCNN
 from reproducibility import set_seed
@@ -23,8 +34,9 @@ def train(model_path: str = MODEL_PATH, best_model_path: str = MODEL_PATH_BEST):
     # CrossEntropyLoss:
     # L = - sum_{i=1}^{n} y_i * log(ŷ_i)
     # In PyTorch, it expects raw logits (no softmax), and internally applies log-softmax + NLL.
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LR)
+    criterion = nn.CrossEntropyLoss(label_smoothing=LABEL_SMOOTHING)
+    optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
     wandb.init(project=WANDB_PROJECT)
     wandb.config.update(
@@ -37,6 +49,10 @@ def train(model_path: str = MODEL_PATH, best_model_path: str = MODEL_PATH_BEST):
             "seed": SEED,
             "model_path": model_path,
             "best_model_path": best_model_path,
+            "weight_decay": WEIGHT_DECAY,
+            "label_smoothing": LABEL_SMOOTHING,
+            "optimizer": "AdamW",
+            "scheduler": "CosineAnnealingLR",
         }
     )
 
@@ -112,7 +128,10 @@ def train(model_path: str = MODEL_PATH, best_model_path: str = MODEL_PATH_BEST):
             best_val_acc = val_acc
             torch.save(model.state_dict(), best_model_path)
 
+        scheduler.step()
+
     torch.save(model.state_dict(), model_path)
+    wandb.run.summary["best_val_acc"] = best_val_acc
     wandb.finish()
     print(f"Saved final model weights to {model_path}")
     print(f"Saved best model weights to {best_model_path}")

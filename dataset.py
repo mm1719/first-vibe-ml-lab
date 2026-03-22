@@ -24,6 +24,7 @@ def _build_cifar10_dataset(*, train: bool, transform):
 def _build_transforms():
     train_transform = transforms.Compose(
         [
+            transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
             transforms.ToTensor(),
