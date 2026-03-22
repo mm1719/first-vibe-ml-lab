@@ -79,3 +79,12 @@ python evaluation.py --resume-run-id <run_id>
 - The dataset is loaded with `download=False` by design.
 - Random behavior is controlled through `SEED` for reproducibility.
 - This repo intentionally keeps the model simple so the workflow is the main focus.
+
+## Project Conventions
+
+- `train.py`, `inference.py`, and `evaluation.py` are intentionally separated and should remain separate.
+- Training metrics belong in `wandb.log`; final evaluation metrics belong in `wandb.run.summary`.
+- `train/val/test` must share the same normalization, while augmentation is only applied to training data.
+- Reproducibility is part of the project contract: keep all random behavior under `SEED`.
+- `.cursorrules_original` stores the original Cursor rules for this project.
+- `.cursorrules` stores the rewritten, project-finalized rules that reflect the current reproducible workflow.
