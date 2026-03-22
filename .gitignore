@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.pth
+*.png
+*.tar.gz
+wandb/
+
+data/
+
+.env
+.venv/
+venv/

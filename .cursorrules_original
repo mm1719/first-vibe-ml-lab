@@ -1,0 +1,13 @@
+# 實驗室開發規範
+- 框架：PyTorch
+- 數據：使用本地的 CIFAR-10 資料集（路徑設定為 ./data）
+- 實驗追蹤：使用 Weights & Biases (WandB)
+- WandB 專案名稱：First-Vibe-Project
+- 代碼架構需求：
+  1. config.py: 統一管理超參數 (Batch Size=64, LR=0.001, Epochs=5)。
+  2. model.py: 定義一個簡單的 CNN (3層卷積 + MaxPool + 全連接層)。
+  3. dataset.py: 處理數據加載與正規化。
+  4. train.py: 核心訓練循環，需包含 wandb.log 記錄 loss 與 accuracy。
+  5. inference.py: 視覺化預測結果。
+  6. 視情況多加各種功能模組。
+- 硬體：自動檢查並使用 CUDA（若有）或 CPU。
