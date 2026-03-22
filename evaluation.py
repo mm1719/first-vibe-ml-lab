@@ -1,5 +1,6 @@
 import time
 import argparse
+import json
 
 import torch
 from torch.utils.data import DataLoader
@@ -13,6 +14,16 @@ from reproducibility import set_seed
 
 
 TOPK_LIST = (1, 3, 5)
+
+try:
+    import pydantic_core
+except ImportError:
+    pydantic_core = None
+
+
+def _ensure_wandb_artifact_compat() -> None:
+    if pydantic_core is not None and not hasattr(pydantic_core, "from_json"):
+        pydantic_core.from_json = json.loads
 
 
 def _build_eval_dataset(transform):
@@ -62,6 +73,7 @@ def _confusion_matrix_from_preds(labels: torch.Tensor, preds: torch.Tensor, num_
 @torch.no_grad()
 def evaluate(model_path: str = MODEL_PATH, resume_run_id: str | None = None):
     set_seed(SEED)
+    _ensure_wandb_artifact_compat()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = SimpleCNN(num_classes=NUM_CLASSES).to(device)
@@ -255,16 +267,13 @@ def evaluate(model_path: str = MODEL_PATH, resume_run_id: str | None = None):
             f1[i].item(),
         )
 
-    try:
-        wandb.log(
-            {
-                "per_class_metrics": per_class_table,
-                "confusion_matrix_counts": wandb.Image(counts_path),
-                "confusion_matrix_normalized": wandb.Image(norm_path),
-            }
-        )
-    except Exception as exc:
-        print(f"W&B artifact logging skipped: {exc}")
+    wandb.log(
+        {
+            "per_class_metrics": per_class_table,
+            "confusion_matrix_counts": wandb.Image(counts_path),
+            "confusion_matrix_normalized": wandb.Image(norm_path),
+        }
+    )
     wandb.finish()
 
 
