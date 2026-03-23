@@ -12,15 +12,18 @@ Install the runtime dependencies with:
 pip install -r requirements.txt
 ```
 
-## What It Includes
+## Project Layout And Conventions
 
-- `scripts/train.py`: training loop with validation and WandB logging
-- `scripts/inference.py`: sample predictions and visualization output
-- `src/utils/evaluation.py`: test metrics, per-class metrics, and confusion matrices
-- `src/data/dataset.py`: CIFAR-10 data loading, transforms, and train/val/test split
-- `src/models/model.py`: `SimpleCNN` experiment model
-- `configs/config.py`: centralized experiment config
-- `src/utils/reproducibility.py`: shared seed and deterministic setup
+- `scripts/train.py`, `scripts/inference.py`, and `scripts/evaluation.py` are the CLI entrypoints.
+- `src/data/dataset.py` owns data loading, transforms, and dataset splits.
+- `src/models/model.py` owns the model definition.
+- `src/utils/evaluation.py` owns evaluation metrics, per-class reporting, and confusion matrices.
+- `src/utils/reproducibility.py` owns shared seed setup.
+- `configs/config.py` centralizes shared project configuration.
+- Training metrics belong in `wandb.log`; final evaluation metrics belong in `wandb.run.summary`.
+- `train/val/test` share normalization, while augmentation is only applied to training data.
+- Reproducibility is part of the project contract: keep random behavior under `SEED`.
+- `.cursorrules_original` stores the initial Cursor rules, while `.cursorrules` stores the maintained project rules.
 
 ## Project Goals
 
@@ -97,15 +100,6 @@ python scripts/evaluation.py --resume-run-id <run_id>
 - The dataset is loaded with `download=False` by design.
 - Random behavior is controlled through `SEED` for reproducibility.
 - This repo intentionally keeps the model simple so the workflow is the main focus.
-
-## Project Conventions
-
-- `train.py`, `inference.py`, and `evaluation.py` are intentionally separated and should remain separate.
-- Training metrics belong in `wandb.log`; final evaluation metrics belong in `wandb.run.summary`.
-- `train/val/test` must share the same normalization, while augmentation is only applied to training data.
-- Reproducibility is part of the project contract: keep all random behavior under `SEED`.
-- `.cursorrules_original` stores the original Cursor rules for this project.
-- `.cursorrules` stores the rewritten, project-finalized rules that reflect the current reproducible workflow.
 
 ## Experiment History
 
@@ -202,3 +196,7 @@ Selected per-class improvements over baseline:
 | Macro F1 | 0.7360 | 0.8545 | +0.1185 |
 
 The second setup is the better default for this repository because it improves both overall accuracy and the weakest animal classes without making the workflow significantly more complicated.
+
+## Development Notes
+
+This round of work exposed a common refactor risk: moving files into a cleaner structure is straightforward, but script entrypoints often break because direct execution changes Python's import path behavior. The useful lesson here was that repository layout, runtime entrypoints, environment selection, and documentation have to move together. The project is cleaner now, but the real gain was making the structure match how the project is actually run from an Anaconda terminal.

@@ -1,131 +1,111 @@
 # CIFAR Vibe Lab Project Rules
 
-## 文件定位
-- `.cursorrules_original` 是這個專案最一開始提供給 Cursor 的原始規範。
-- `.cursorrules` 是依照目前已完成版本重新整理後的規範，目的是讓同類型專案可以被穩定複現。
-- 若兩者內容有差異，應以 `.cursorrules` 反映的最終專案行為與結構為準。
+## File Roles
 
-## 專案目標
-- 建立一套可執行、可重現、可追蹤的 CIFAR-10 小型實驗流程。
-- 明確拆分訓練、推論、最終評估三個階段。
-- 使用 WandB 區分訓練期 time-series 指標與最終 evaluation summary。
+- `.cursorrules_original` is the original rule file first given to Cursor.
+- `.cursorrules` is the maintained rule file that reflects the current project workflow.
+- If `.cursorrules_original` and `.cursorrules` differ, follow `.cursorrules`.
 
-## 專案範圍
-- 框架：PyTorch
-- 資料集：CIFAR-10
-- 資料路徑：`./data`
-- 實驗追蹤：Weights & Biases
-- WandB project：`First-Vibe-Project`
-- 裝置：優先使用 CUDA，否則退回 CPU
-- Windows 環境下 `num_workers` 使用保守值，避免 multiprocessing 問題
+## Agent Workflow Rules
 
-## 核心原則
-- 先完成可跑通的 end-to-end 流程：`train.py -> inference.py -> evaluation.py`
-- 模組責任分離：資料處理、模型定義、訓練、推論、評估不要混在同一檔案
-- train/val/test 使用一致的 normalization
-- augmentation 只能用在 training split
-- 所有隨機行為必須受 `SEED` 控制
-- 訓練指標用 `wandb.log`
-- 最終評估指標用 `wandb.run.summary.update()`
+- Before running any Python-related command, always ask whether a virtual environment should be used and what the environment name is.
+- Python-related commands include `python`, `pip`, `pytest`, `jupyter`, and similar tooling.
+- Do not assume the active shell environment is the correct runtime environment.
+- If the user specifies an environment, use that environment consistently for later Python execution.
 
-## 檔案職責
+## Code Style Rules
 
-### `config.py`
-- 僅放可調整超參數、常數與路徑設定
-- 必含：
-  - `BATCH_SIZE`
-  - `LR`
-  - `EPOCHS`
-  - `VAL_SPLIT`
-  - `SEED`
-  - `NUM_CLASSES`
-  - `MODEL_PATH`
-  - `WANDB_PROJECT`
-- 建議包含：
-  - `MODEL_PATH_BEST`
-  - normalization 用的 `MEAN` / `STD`
-  - `NUM_WORKERS`
+- Format Python code in a Black-compatible style with a target line length of 88.
+- Prefer Ruff-compatible style and avoid unnecessary stylistic deviations.
+- Prefer Google-style docstrings when docstrings are useful.
+- Prefer `pathlib` over `os.path` for path handling.
+- Keep code readable and explicit rather than overly compact.
 
-### `dataset.py`
-- 負責 transforms、dataset 建立、train/val/test split、DataLoader
-- train/val 必須來自同一份 `train=True` 資料源
-- test 必須固定來自 `train=False`
-- train transform：augmentation + normalization
-- val/test transform：只做 normalization
-- inference 顯示用途可額外提供不做 normalization 的 display transform
-- DataLoader 規則：
-  - train loader：`shuffle=True`
-  - val/test loader：`shuffle=False`
-  - `num_workers` 由 `config.py` 控制
-- 預設以 `download=False` 讀資料；若資料不存在，錯誤訊息要清楚
+## Commit Message Rules
 
-### `model.py`
-- 定義模型類別，例如 `SimpleCNN`
-- 輸出層大小必須等於 `NUM_CLASSES`
-- `forward()` 只回傳 logits，不自行加 softmax
+- Use Conventional Commits.
+- Prefer commit types such as `feat`, `fix`, `docs`, `style`, `refactor`, and `chore`.
+- Commit messages should describe the actual code or documentation change, not the conversation.
 
-### `train.py`
-- 負責完整訓練迴圈與每個 epoch 的 validation
-- model 與 batch 必須放在同一個 device
-- 訓練前必須設定 reproducibility seed
-- 使用 `wandb.init(project=WANDB_PROJECT)`
-- 將主要超參寫入 `wandb.config`
-- 每個 epoch 記錄：
+## Project Goals
+
+- Build a compact, reproducible, and trackable CIFAR-10 experiment workflow.
+- Keep training, inference, and evaluation as separate stages.
+- Use WandB to separate training time-series metrics from final evaluation summaries.
+
+## Project Scope
+
+- Framework: PyTorch
+- Dataset: CIFAR-10
+- Dataset path: `./data`
+- Experiment tracking: Weights & Biases
+- WandB project: `First-Vibe-Project`
+- Device policy: prefer CUDA, otherwise CPU
+- Windows policy: keep `num_workers` conservative unless explicitly changed
+
+## Core Project Principles
+
+- Prioritize a working end-to-end path: `train -> inference -> evaluation`
+- Keep module responsibilities separated
+- Use consistent normalization across train, validation, and test
+- Apply augmentation only to the training split
+- Keep randomness controlled by `SEED`
+- Log training metrics with `wandb.log`
+- Log final evaluation metrics with `wandb.run.summary.update()`
+
+## File Responsibilities
+
+### `configs/config.py`
+
+- Store tunable hyperparameters, constants, and paths
+- Keep shared project configuration centralized
+
+### `src/data/dataset.py`
+
+- Build transforms, datasets, splits, and dataloaders
+- Keep train, validation, and test split behavior explicit
+
+### `src/models/model.py`
+
+- Define the model architecture
+- Return logits from `forward()`
+
+### `scripts/train.py`
+
+- Run training and validation
+- Save final and best checkpoints
+- Expose CLI arguments for checkpoint paths
+
+### `scripts/inference.py`
+
+- Load a checkpoint and generate sample predictions
+- Save visualization output
+
+### `src/utils/evaluation.py`
+
+- Evaluate on the test set
+- Compute summary metrics, per-class metrics, and confusion matrices
+- Support WandB summary and artifact logging
+
+### `scripts/evaluation.py`
+
+- Provide the CLI entrypoint for evaluation
+
+## Reproducibility Rules
+
+- Define `SEED` in configuration
+- Set random seeds in training and evaluation entrypoints
+- Use seeded generators for train/validation splitting
+- Keep deterministic behavior explicit when enabled
+
+## WandB Naming Rules
+
+- Training keys:
   - `train_loss`
   - `train_acc`
   - `val_loss`
   - `val_acc`
-- 必須至少儲存：
-  - final checkpoint 到 `MODEL_PATH`
-- 建議額外儲存：
-  - best validation checkpoint 到 `MODEL_PATH_BEST`
-- 應提供 CLI：
-  - `--model-path`
-  - `--best-model-path`
-
-### `inference.py`
-- 讀取訓練好的 checkpoint
-- 從 test set 抽固定數量樣本做預測
-- 本專案固定顯示 4 張圖
-- 輸出一張包含 GT / Pred 的圖片，例如 `inference_samples.png`
-- 應提供 CLI：
-  - `--model-path`
-
-### `evaluation.py`
-- 使用 test set 做最終評估
-- 評估前必須設定 reproducibility seed
-- 至少輸出下列指標：
-  - top-1 accuracy
-  - top-3 accuracy
-  - top-5 accuracy
-  - per-class accuracy
-  - precision / recall / f1
-  - confusion matrix counts
-  - confusion matrix normalized by ground truth
-- WandB 記錄規則：
-  - scalar 結果寫入 `wandb.run.summary.update()`
-  - per-class metrics 以 `wandb.Table` 上傳
-  - confusion matrix 圖片以 `wandb.Image` 上傳
-- 應支援 CLI：
-  - `--resume-run-id`
-
-## 可重現性要求
-- `SEED` 統一定義在 `config.py`
-- 入口腳本至少在 `train.py` 與 `evaluation.py` 設定：
-  - `random.seed(SEED)`
-  - `np.random.seed(SEED)`，若有使用 NumPy
-  - `torch.manual_seed(SEED)`
-  - `torch.cuda.manual_seed_all(SEED)`，若可用
-- 若專案選擇 deterministic 模式，需同步設定相關 torch backend
-- train/val split 必須使用帶 seed 的 generator 產生固定 indices
-
-## WandB 命名規範
-- 訓練階段：
-  - `train_loss`
-  - `train_acc`
-  - `val_loss`
-  - `val_acc`
-- 最終評估：
+- Evaluation keys:
   - `test_acc_top1`
   - `test_acc_top3`
   - `test_acc_top5`
@@ -133,28 +113,17 @@
   - `macro_recall`
   - `macro_f1`
   - `weighted_f1`
-- per-class table 欄位：
+- Per-class table columns:
   - `class`
   - `per_class_acc`
   - `precision`
   - `recall`
   - `f1`
 
-## 預設實作值
-- `BATCH_SIZE = 64`
-- `LR = 0.001`
-- `EPOCHS = 5`
-- `VAL_SPLIT = 0.1`
-- `SEED = 42`
-- `NUM_CLASSES = 10`
-- 模型：SimpleCNN
-- train augmentation：
-  - `RandomHorizontalFlip`
-  - `ColorJitter`
+## Guardrails
 
-## Agent 行為補充
-- 不要為了方便而把 train、inference、evaluation 混寫成單一腳本
-- 不要在 model output 上額外加 softmax 再交給 `CrossEntropyLoss`
-- 不要讓 test set 參與 train/val split
-- 不要在 evaluation 階段生成多餘的 WandB time-series charts
-- 若資料已存在，避免自動重新下載
+- Do not merge train, inference, and evaluation into one script just for convenience.
+- Do not apply softmax before `CrossEntropyLoss`.
+- Do not use the test split for training or validation.
+- Do not create unnecessary WandB time-series charts during evaluation.
+- Avoid re-downloading datasets when the local data already exists.
