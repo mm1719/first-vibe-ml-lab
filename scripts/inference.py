@@ -2,6 +2,10 @@ import argparse
 import random
 from pathlib import Path
 
+from _bootstrap import ensure_project_root_on_path
+
+ensure_project_root_on_path()
+
 import torch
 import matplotlib.pyplot as plt
 

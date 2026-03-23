@@ -2,6 +2,10 @@
 
 import argparse
 
+from _bootstrap import ensure_project_root_on_path
+
+ensure_project_root_on_path()
+
 from configs.config import MODEL_PATH
 from src.utils.evaluation import evaluate
 

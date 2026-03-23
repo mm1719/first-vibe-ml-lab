@@ -1,6 +1,10 @@
 import argparse
 from pathlib import Path
 
+from _bootstrap import ensure_project_root_on_path
+
+ensure_project_root_on_path()
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
