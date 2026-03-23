@@ -2,7 +2,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Subset
 import torch
 
-from config import BATCH_SIZE, CIFAR10_MEAN, CIFAR10_STD, NUM_WORKERS, SEED, VAL_SPLIT
+from configs.config import BATCH_SIZE, CIFAR10_MEAN, CIFAR10_STD, NUM_WORKERS, SEED, VAL_SPLIT
 
 
 def _build_cifar10_dataset(*, train: bool, transform):

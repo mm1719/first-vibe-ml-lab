@@ -6,7 +6,7 @@ import torch.optim as optim
 
 import wandb
 
-from config import (
+from configs.config import (
     BATCH_SIZE,
     EPOCHS,
     LABEL_SMOOTHING,
@@ -19,8 +19,8 @@ from config import (
     WEIGHT_DECAY,
 )
 from dataset import get_dataloaders
-from model import SimpleCNN
-from reproducibility import set_seed
+from src.models.model import SimpleCNN
+from src.utils.reproducibility import set_seed
 
 
 def train(model_path: str = MODEL_PATH, best_model_path: str = MODEL_PATH_BEST):

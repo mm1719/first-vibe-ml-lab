@@ -9,8 +9,8 @@ VAL_SPLIT = 0.1
 SEED = 42
 
 NUM_CLASSES = 10
-MODEL_PATH = "cifar_model.pth"
-MODEL_PATH_BEST = "cifar_model_best.pth"
+MODEL_PATH = "checkpoints/cifar_model.pth"
+MODEL_PATH_BEST = "checkpoints/cifar_model_best.pth"
 
 WANDB_PROJECT = "First-Vibe-Project"
 

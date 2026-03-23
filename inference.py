@@ -4,10 +4,10 @@ import random
 import torch
 import matplotlib.pyplot as plt
 
-from config import MODEL_PATH, NUM_CLASSES, SEED
-from model import SimpleCNN
-from dataset import get_test_datasets_for_inference
-from reproducibility import set_seed
+from configs.config import MODEL_PATH, NUM_CLASSES, SEED
+from src.models.model import SimpleCNN
+from src.data.dataset import get_test_datasets_for_inference
+from src.utils.reproducibility import set_seed
 
 
 def main(model_path: str = MODEL_PATH):
@@ -56,7 +56,9 @@ def main(model_path: str = MODEL_PATH):
         ax_i.set_title(f"GT: {classes[true_label]}\nPred: {classes[pred_label]}", fontsize=10)
 
     plt.tight_layout()
-    out_path = "inference_samples.png"
+    import os
+    os.makedirs("outputs/plots", exist_ok=True)
+    out_path = "outputs/plots/inference_samples.png"
     plt.savefig(out_path, dpi=150)
     print(f"Saved visualization to {out_path}")
     plt.show()

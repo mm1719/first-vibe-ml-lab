@@ -14,13 +14,13 @@ pip install -r requirements.txt
 
 ## What It Includes
 
-- `train.py`: training loop with validation and WandB logging
-- `inference.py`: sample predictions and visualization output
-- `evaluation.py`: test metrics, per-class metrics, and confusion matrices
-- `dataset.py`: CIFAR-10 data loading, transforms, and train/val/test split
-- `model.py`: `SimpleCNN` experiment model
-- `config.py`: centralized experiment config
-- `reproducibility.py`: shared seed and deterministic setup
+- `scripts/train.py`: training loop with validation and WandB logging
+- `scripts/inference.py`: sample predictions and visualization output
+- `src/utils/evaluation.py`: test metrics, per-class metrics, and confusion matrices
+- `src/data/dataset.py`: CIFAR-10 data loading, transforms, and train/val/test split
+- `src/models/model.py`: `SimpleCNN` experiment model
+- `configs/config.py`: centralized experiment config
+- `src/utils/reproducibility.py`: shared seed and deterministic setup
 
 ## Project Goals
 
@@ -51,37 +51,37 @@ Make sure the CIFAR-10 dataset already exists under `./data`.
 Train:
 
 ```bash
-python train.py
+python scripts/train.py
 ```
 
 Train with custom checkpoints:
 
 ```bash
-python train.py --model-path custom_last.pth --best-model-path custom_best.pth
+python scripts/train.py --model-path checkpoints/custom_last.pth --best-model-path checkpoints/custom_best.pth
 ```
 
 Run inference samples:
 
 ```bash
-python inference.py --model-path cifar_model.pth
+python scripts/inference.py --model-path checkpoints/cifar_model.pth
 ```
 
 Run evaluation:
 
 ```bash
-python evaluation.py
+python scripts/evaluation.py
 ```
 
 Evaluate a specific checkpoint:
 
 ```bash
-python evaluation.py --model-path cifar_model_agent_best.pth
+python scripts/evaluation.py --model-path checkpoints/cifar_model_agent_best.pth
 ```
 
 Resume evaluation metrics into an existing WandB run:
 
 ```bash
-python evaluation.py --resume-run-id <run_id>
+python scripts/evaluation.py --resume-run-id <run_id>
 ```
 
 ## Outputs
