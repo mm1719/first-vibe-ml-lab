@@ -86,11 +86,11 @@ python scripts/evaluation.py --resume-run-id <run_id>
 
 ## Outputs
 
-- Final checkpoint: `cifar_model.pth`
-- Best validation checkpoint: `cifar_model_best.pth`
-- Agent experiment checkpoints: `cifar_model_agent_last.pth`, `cifar_model_agent_best.pth`
-- Inference visualization: `inference_samples.png`
-- Confusion matrix figures: `confusion_matrix_counts_*.png`, `confusion_matrix_normalized_*.png`
+- Final checkpoint: `checkpoints/cifar_model.pth`
+- Best validation checkpoint: `checkpoints/cifar_model_best.pth`
+- Agent experiment checkpoints: `checkpoints/cifar_model_agent_last.pth`, `checkpoints/cifar_model_agent_best.pth`
+- Inference visualization: `outputs/plots/inference_samples.png`
+- Confusion matrix figures: `outputs/plots/confusion_matrix_counts_*.png`, `outputs/plots/confusion_matrix_normalized_*.png`
 
 ## Notes
 
@@ -128,7 +128,7 @@ Configuration:
 - Weight decay: none
 - Label smoothing: none
 - Augmentation: `RandomHorizontalFlip`, `ColorJitter`
-- Evaluation checkpoint: `cifar_model.pth`
+- Evaluation checkpoint: `checkpoints/cifar_model.pth`
 
 Results:
 
@@ -170,8 +170,8 @@ Configuration:
 - Label smoothing: `0.1`
 - Scheduler: `CosineAnnealingLR`
 - Augmentation: `RandomCrop(32, padding=4)`, `RandomHorizontalFlip`, `ColorJitter`
-- Training checkpoint: `cifar_model_agent_last.pth`
-- Best validation checkpoint: `cifar_model_agent_best.pth`
+- Training checkpoint: `checkpoints/cifar_model_agent_last.pth`
+- Best validation checkpoint: `checkpoints/cifar_model_agent_best.pth`
 
 Results:
 

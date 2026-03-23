@@ -1,5 +1,6 @@
 import argparse
 import random
+from pathlib import Path
 
 import torch
 import matplotlib.pyplot as plt
@@ -56,9 +57,8 @@ def main(model_path: str = MODEL_PATH):
         ax_i.set_title(f"GT: {classes[true_label]}\nPred: {classes[pred_label]}", fontsize=10)
 
     plt.tight_layout()
-    import os
-    os.makedirs("outputs/plots", exist_ok=True)
-    out_path = "outputs/plots/inference_samples.png"
+    out_path = Path("outputs/plots/inference_samples.png")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path, dpi=150)
     print(f"Saved visualization to {out_path}")
     plt.show()

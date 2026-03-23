@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -18,7 +19,7 @@ from configs.config import (
     WANDB_PROJECT,
     WEIGHT_DECAY,
 )
-from dataset import get_dataloaders
+from src.data.dataset import get_dataloaders
 from src.models.model import SimpleCNN
 from src.utils.reproducibility import set_seed
 
@@ -26,6 +27,8 @@ from src.utils.reproducibility import set_seed
 def train(model_path: str = MODEL_PATH, best_model_path: str = MODEL_PATH_BEST):
     set_seed(SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    Path(model_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(best_model_path).parent.mkdir(parents=True, exist_ok=True)
 
     train_loader, val_loader, _ = get_dataloaders(batch_size=BATCH_SIZE)
 

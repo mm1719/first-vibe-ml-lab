@@ -1,6 +1,7 @@
 import time
 import argparse
 import json
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -202,10 +203,10 @@ def evaluate(model_path: str = MODEL_PATH, resume_run_id: str | None = None):
     plt.tight_layout()
 
     ts = time.strftime("%Y%m%d_%H%M%S")
-    import os
-    os.makedirs("outputs/plots", exist_ok=True)
-    counts_path = f"outputs/plots/confusion_matrix_counts_{ts}.png"
-    norm_path = f"outputs/plots/confusion_matrix_normalized_{ts}.png"
+    plots_dir = Path("outputs/plots")
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    counts_path = plots_dir / f"confusion_matrix_counts_{ts}.png"
+    norm_path = plots_dir / f"confusion_matrix_normalized_{ts}.png"
 
     # Save two separate images (for nicer wandb display)
     # 1) Counts only
