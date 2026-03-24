@@ -87,6 +87,22 @@ Resume evaluation metrics into an existing WandB run:
 python scripts/evaluation.py --resume-run-id <run_id>
 ```
 
+## Reproducible Command Sequence
+
+Use these commands in your intended Python environment to reproduce the full workflow:
+
+```bash
+python scripts/train.py --model-path checkpoints/cifar_model_repro_last.pth --best-model-path checkpoints/cifar_model_repro_best.pth
+python scripts/inference.py --model-path checkpoints/cifar_model_repro_best.pth
+python scripts/evaluation.py --model-path checkpoints/cifar_model_repro_best.pth
+```
+
+If you want evaluation metrics appended to the same WandB run created during training:
+
+```bash
+python scripts/evaluation.py --model-path checkpoints/cifar_model_repro_best.pth --resume-run-id <wandb_run_id>
+```
+
 ## Outputs
 
 - Final checkpoint: `checkpoints/cifar_model.pth`
@@ -196,6 +212,27 @@ Selected per-class improvements over baseline:
 | Macro F1 | 0.7360 | 0.8545 | +0.1185 |
 
 The second setup is the better default for this repository because it improves both overall accuracy and the weakest animal classes without making the workflow significantly more complicated.
+
+### Refactor Validation Run
+
+After the project layout was reorganized into `configs`, `src`, and `scripts`, the full workflow was validated again in the `AI_Intro_Final` environment using fresh checkpoints.
+
+Artifacts:
+
+- Training checkpoint: `checkpoints/cifar_model_reorg_last.pth`
+- Best checkpoint: `checkpoints/cifar_model_reorg_best.pth`
+- Inference output: `outputs/plots/inference_samples.png`
+- WandB run: `5ayynfy6` (`olive-bee-3`)
+
+Results:
+
+- Best validation accuracy: `0.8640`
+- Test top-1 accuracy: `0.8548`
+- Test top-3 accuracy: `0.9748`
+- Test top-5 accuracy: `0.9932`
+- Macro F1: `0.8545`
+
+This matters because it confirms the refactored directory structure is not only cleaner, but also operationally valid for the full `train -> inference -> evaluation` workflow in the actual Anaconda-based environment used for the project.
 
 ## Development Notes
 

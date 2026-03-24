@@ -78,7 +78,7 @@ def evaluate(model_path: str = MODEL_PATH, resume_run_id: str | None = None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = SimpleCNN(num_classes=NUM_CLASSES).to(device)
-    state_dict = torch.load(model_path, map_location=device)
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)
     model.load_state_dict(state_dict)
     model.eval()
 
