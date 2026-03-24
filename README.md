@@ -124,6 +124,14 @@ This repository currently records two experiment setups:
 - A manual baseline configuration, treated as the initial human-authored setup
 - An agent-improved configuration, chosen after reviewing the baseline evaluation results
 
+### Run Overview
+
+| Run | Role | Checkpoint | Val Acc | Test Top-1 | Test Top-3 | Test Top-5 | Macro F1 | WandB |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Baseline | Initial manual setup | `checkpoints/cifar_model.pth` | 0.7384 | 0.7369 | 0.9371 | 0.9819 | 0.7360 | `mka09767` |
+| Agent-improved | Architecture and training upgrade | `checkpoints/cifar_model_agent_best.pth` | 0.8640 | 0.8548 | 0.9748 | 0.9932 | 0.8545 | `19uxt7z9` |
+| Refactor validation | End-to-end verification after reorganization | `checkpoints/cifar_model_reorg_best.pth` | 0.8640 | 0.8548 | 0.9748 | 0.9932 | 0.8545 | `5ayynfy6` |
+
 ### Baseline Experiment
 
 This run corresponds to the original setup recorded under `wandb/run-20260320_211051-mka09767/files`.
